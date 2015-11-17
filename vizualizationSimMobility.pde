@@ -13,7 +13,7 @@ float day_start_time = 3*60*60;
 int ncars = 0;
 String frame_filename;
 float prev_time = -1;
-PImage bg = loadImage("/Users/katarzyna/Documents/Processing/vizualizationSimMobility/map.png");
+PImage bg = loadImage("/Users/katarzyna/Documents/Processing/vizualizationSimMobility/mapbw.png");
 
 // Event structure to load the data from the file
 class Event {
@@ -55,6 +55,7 @@ float max_x = 12000;
 float max_y = 12000;
 float scale_x = 1;
 float scale_y = 1;
+float scaling = 1;
 float range_x = 12000;
 float range_y = 12000;
 float mult_x = 1.0;
@@ -75,11 +76,10 @@ void setup() {
   mult_y = 1.0;
   min_x = 365000*mult_x; //365558.56; //longitude
   max_x = 377000*mult_x; //376789.19;
-  min_y = 140000*mult_y;//140278.73; /latitude
+  min_y = 140000*mult_y;//140278.73; //latitude
   max_y = 149000*mult_y;//142433.66;
   range_x = max_x - min_x;
   range_y = max_y - min_y;
-  day_start_time = 10800;
 
   reader = createReader(filename);
 
@@ -95,8 +95,9 @@ void setup() {
   //background(0, 0, 0);
   smooth();
   // compute transformation vector
-  scale_x = w_width/(max_x - min_x);
-  scale_y = w_height/(max_y - min_y);
+  scale_x = w_width/range_x;
+  scale_y = w_height/range_y;
+  scaling = w_height/range_y;
 }
 
 // read log file
@@ -185,16 +186,18 @@ void draw() {
 
   // apply transformation
   pushMatrix();
-  scale(scale_x, scale_y);
+  scale(scaling);
+  //rotate(radians(45));
   translate(-min_x, -min_y);
 
+  
   // draw locations
   stroke(100, 100, 100);
   fill(100, 100, 100, 100);
   for (Map.Entry me : locs.entrySet()) {
     //println(me.getKey());
     Location l = (Location) me.getValue();
-    ellipse(l.x, l.y, l.s*loc_s_factor, l.s*loc_s_factor);
+    ellipse(l.x, max_y-l.y+min_y, l.s*loc_s_factor, l.s*loc_s_factor);
   }
   noStroke();
   for (int i=0; i<events.size (); i++) {
@@ -205,25 +208,25 @@ void draw() {
     // enum EventType {EVENT_MOVE, EVENT_ARRIVAL, EVENT_PICKUP, EVENT_DROPOFF};
     if (e.type == 1) {
       if (e.status == 8) {
-        fill(#FFAF00);
+        fill(#6A5ACD); //yellow FFAF00, purple #6A5ACD
       } 
       else {
-        fill(#00B0FF);
+        fill(#EE3A8C); //blue #00B0FF
       }
-      ellipse(e.x, e.y, 5*sc_factor, 5*sc_factor);  // move event
+      ellipse(e.x, max_y-e.y+min_y, 5*sc_factor, 5*sc_factor);  // move event
       //println("", e.x, " " , e.y);
     } 
     else if (e.type == 2) {
-      fill(#FFAF00); 
-      ellipse(e.x, e.y, 8*sc_factor, 8*sc_factor);
+      fill(#6A5ACD); //yellow
+      ellipse(e.x, max_y-e.y+min_y, 8*sc_factor, 8*sc_factor);
     } 
     else if (e.type == 3) {
-      fill(#00C138); 
-      ellipse(e.x, e.y, 10*sc_factor, 10*sc_factor);
+      fill(#00C138); //green
+      ellipse(e.x, max_y-e.y+min_y, 10*sc_factor, 10*sc_factor);
     } 
     else if (e.type == 4) {
-      fill(#FF00E6); 
-      ellipse(e.x, e.y, 12*sc_factor, 12*sc_factor);
+      fill(#FF00E6); //pink
+      ellipse(e.x, max_y-e.y+min_y, 12*sc_factor, 12*sc_factor);
     }
     //println("Test:", e.x, e.y);
   }
@@ -231,7 +234,7 @@ void draw() {
   current_time = end_time;
 
   popMatrix();
-  fill(#FFAF00);
+  fill(#0000FF);
   textSize(32);
   float sim_time = current_time + day_start_time;
   //println(sim_time);
