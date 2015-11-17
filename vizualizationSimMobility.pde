@@ -228,7 +228,6 @@ void draw() {
     //println("Test:", e.x, e.y);
   }
 
-
   current_time = end_time;
 
   popMatrix();
