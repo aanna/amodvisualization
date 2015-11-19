@@ -62,8 +62,8 @@ float max_y = 149000*mult_y;//142433.66;;
 float scale_x = 1;
 float scale_y = 1;
 float scaling = 1;
-float range_x = max_x - min_x;;
-float range_y = max_y - min_y;;
+float range_x = max_x - min_x;
+float range_y = max_y - min_y;
 
 float w_width = 900;  
 float w_height = (range_y/range_x)*w_width;
@@ -75,9 +75,9 @@ class Location {
 HashMap<Integer, Location> locs = new HashMap<Integer, Location>();
 
 void settings(){
-  size((int) w_width, (int) w_height);
-  
+  size((int) w_width, (int) w_height); 
 }
+
 // setup the simulation
 void setup() {
   frameRate(frame_rate);
