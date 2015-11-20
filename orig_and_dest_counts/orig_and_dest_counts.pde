@@ -2,9 +2,12 @@
 
 import java.util.Map;
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 // configuration
-int frame_rate = 2;
+int frame_rate = 2; // how many frames is visualized per second
 boolean save_frame = false;
 float day_start_time = 3*60*60;
 int ncars = 0;
@@ -46,7 +49,7 @@ void settings() {
 void setup() {
   frameRate(frame_rate);
   stroke(255);
-  bg = loadImage("mapbw.png");
+  bg = loadImage("mapbw_new.png");
   background(bg);
   smooth();
 
@@ -160,7 +163,7 @@ void draw() {
     //println("getKey type: " + me.getKey());
     origin_size = countsOrigin[ii_o];
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size*2, origin_size*2);
+    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size*3, origin_size*3);
     ii_o++;
   }
 
@@ -171,7 +174,7 @@ void draw() {
     //println("getKey funtion: " + me.getKey());
     dest_size = countsDest[ii_d];
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size*2, dest_size*2);
+    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size*3, dest_size*3);
     ii_d++;
   }
   
@@ -180,5 +183,14 @@ void draw() {
 
   //println("reb_period: " + reb_period);
   popMatrix();
-  fill(#0000FF);
+  fill(#C9E893);
+  textSize(32);
+  float sim_time = (counter-1)*30*60 + day_start_time;
+  //println(sim_time);
+  Calendar calendar = Calendar.getInstance();
+  calendar.set(2000, 1, 1, 0, 0, 0);
+  //calendar.setTimeInMillis((int) sim_time*1000);
+  calendar.add(Calendar.SECOND, (int) sim_time);
+  DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+  text(formatter.format(calendar.getTime()), 10, 30);
 }
