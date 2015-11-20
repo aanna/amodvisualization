@@ -1,19 +1,23 @@
 // visualization of origin and destination counts
 
 import java.util.Map;
+import java.io.*;
 
 // configuration
-float time_window = 30; // 1 second
 int frame_rate = 50;
 boolean save_frame = false;
 float day_start_time = 3*60*60;
 int ncars = 0;
-String frame_filename;
-float prev_time = -1;
-BufferedReader stationReader;
-PImage bg;
-String origin_count[];
+int reb_period = 0;
+int counter = 0;
 
+BufferedReader stationReader;
+BufferedReader originReader;
+BufferedReader destReader;
+PImage bg; // to load background picture
+String frame_filename; // for saving frames
+
+// scale up/down the network to the size of the screen
 float mult_x = 1.0;
 float mult_y = 1.0;
 float min_x = 365000*mult_x; //365558.56; //longitude;
@@ -35,9 +39,14 @@ class Station {
 
 HashMap<Integer, Station> stations = new HashMap<Integer, Station>();
 
+// counter to store how many trips departures/arrives to each station
+class Counter {
+  public int count;
+}
+
 void settings() {
   size((int) w_width, (int) w_height);
-}
+} //settings
 
 void setup() {
   frameRate(frame_rate);
@@ -52,11 +61,17 @@ void setup() {
   scaling = w_height/range_y;
 
   // station file
-  String stationFile = "/Users/katarzyna/Dropbox/matlab/2015-09_FleetSizeEstimation/inputDemand/ecbd_stations21.txt";  
+  String stationFile = "ecbd_stations21.txt";  
   stationReader = createReader(stationFile);
 
   // origin file
-} 
+  String originFile = "origCounts_reb1800_stations21.txt";
+  originReader = createReader(originFile);
+
+  // destination file
+  String destFile = "destCounts_reb1800_stations21.txt";
+  destReader = createReader(destFile);
+} // setup
 
 //read station file
 void readStationFile() {
@@ -82,23 +97,58 @@ void readStationFile() {
     i++;
     println(stations.size());
   }
-}
+} //readStationFile
 
-//// load counts of origins and destinations for each time of the day
-//String counts[] = loadStrings("/Users/katarzyna/Dropbox/matlab/2015-09_FleetSizeEstimation/origCounts_reb1800_stations21.txt");
-//println("there are " + counts.length + " rebalancing periods.");
-//for (int i = 0; i < counts.length; i++) {
-//  println(counts[i]);
-//  String[] cols = splitTokens(counts[i]);
-//  //println("Lenght of s: " + cols.length + " stations.");
-//  //println("added to origin_count [" + i + "]");
-//}
+// read counts (origin and destination) file
+void readCountsFile(BufferedReader reader, int currentLine, ArrayList counts) {
+  String line;
+  if (counter == currentLine) {
+    try {
+      line = reader.readLine();
+      //counter++;
+      //println("currentLine1 inside read function: " + currentLine);
+    } 
+    catch (IOException e) {
+      e.printStackTrace();
+      line = null;
+    }
+    if (line == null) return;
+
+    println(line);
+    String[] cols = splitTokens(line);
+    //println("readCountsFile function: There are: " + cols.length + " stations after splitting.");
+
+    for (int i = 0; i < cols.length; i++) {
+      Counter ct = new Counter();
+      ct.count = parseInt(cols[i]);
+      //println("ct.count: " + ct.count);
+      counts.add(ct);
+      //println("counts.size(): " + counts.size());
+    }
+    currentLine = reb_period;
+    //println("currentLine2 inside read function: " + currentLine);
+  }
+} // readCountsFile
 
 void draw() {
   background(bg);
 
-  float station_size = 150; //0.000001
+  int origin_size = 250;
+  int dest_size = 150; 
   readStationFile();
+
+  int current_line = reb_period;
+  ArrayList<Counter> countsOrigin = new ArrayList<Counter>();
+  ArrayList<Counter> countsDest = new ArrayList<Counter>();
+
+  if (current_line < stations.size()) {
+    println("Origin: ");
+    readCountsFile(originReader, current_line, countsOrigin);
+    //println("Counts Origin size: " + countsOrigin.size());
+    println("Destination: ");
+    readCountsFile(destReader, current_line, countsDest);
+    //println("Counts Destination size: " + countsDest.size());
+  }
 
   // apply transformation
   pushMatrix();
@@ -106,14 +156,35 @@ void draw() {
   //rotate(radians(45));
   translate(-min_x, -min_y);
 
-  // draw stations
+  // draw stations as a function of origins
   stroke(100, 100, 100);
-  fill(#6A5ACD);
+  fill(255, 51, 51, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
+  //the 4th entry is transarency, where 0 means 0% opaque (completely transparent) and 255 is completely opaque  
+
   for (Map.Entry me : stations.entrySet()) {
-    //println(me.getKey());
+    println("getKey type: " + me.getKey());
+    //origin_size = countsOrigin.get(1);
+    //for each key find the size of the station as a function of the number of originating trips
+
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, station_size, station_size);
+    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size, origin_size);
   }
+
+  // draw stations as a function of destinations
+  stroke(100, 100, 100);
+  fill(0, 193, 56, 127); // #00C138 =  (0, 193, 56) green
+  for (Map.Entry me : stations.entrySet()) {
+    //println("getKey funtion: " + me.getKey());
+
+    //for each key find the size of the station as a function of the number of originating trips
+
+    Station st = (Station) me.getValue();
+    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size, dest_size);
+  }
+  
+  reb_period++;
+  counter++;
+  //println("reb_period: " + reb_period);
   popMatrix();
   fill(#0000FF);
 }
