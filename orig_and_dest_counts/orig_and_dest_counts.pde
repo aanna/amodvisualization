@@ -4,12 +4,12 @@ import java.util.Map;
 import java.io.*;
 
 // configuration
-int frame_rate = 50;
+int frame_rate = 2;
 boolean save_frame = false;
 float day_start_time = 3*60*60;
 int ncars = 0;
 int reb_period = 0;
-int counter = 0;
+int counter = 0; // used in readCountsFile function
 
 BufferedReader stationReader;
 BufferedReader originReader;
@@ -38,11 +38,6 @@ class Station {
 }
 
 HashMap<Integer, Station> stations = new HashMap<Integer, Station>();
-
-// counter to store how many trips departures/arrives to each station
-class Counter {
-  public int count;
-}
 
 void settings() {
   size((int) w_width, (int) w_height);
@@ -100,13 +95,11 @@ void readStationFile() {
 } //readStationFile
 
 // read counts (origin and destination) file
-void readCountsFile(BufferedReader reader, int currentLine, ArrayList counts) {
+void readCountsFile(BufferedReader reader, int currentLine, int[] counts) {
   String line;
   if (counter == currentLine) {
     try {
       line = reader.readLine();
-      //counter++;
-      //println("currentLine1 inside read function: " + currentLine);
     } 
     catch (IOException e) {
       e.printStackTrace();
@@ -119,14 +112,13 @@ void readCountsFile(BufferedReader reader, int currentLine, ArrayList counts) {
     //println("readCountsFile function: There are: " + cols.length + " stations after splitting.");
 
     for (int i = 0; i < cols.length; i++) {
-      Counter ct = new Counter();
-      ct.count = parseInt(cols[i]);
-      //println("ct.count: " + ct.count);
-      counts.add(ct);
-      //println("counts.size(): " + counts.size());
+      counts[i] = parseInt(cols[i]);
     }
+    //println("counts: ");
+    //for (int i = 0; i < counts.length; i++) {
+    //println(counts[i]);
+    //}
     currentLine = reb_period;
-    //println("currentLine2 inside read function: " + currentLine);
   }
 } // readCountsFile
 
@@ -138,8 +130,10 @@ void draw() {
   readStationFile();
 
   int current_line = reb_period;
-  ArrayList<Counter> countsOrigin = new ArrayList<Counter>();
-  ArrayList<Counter> countsDest = new ArrayList<Counter>();
+  //ArrayList<Counter> countsOrigin = new ArrayList<Counter>();
+  //ArrayList<Counter> countsDest = new ArrayList<Counter>();
+  int[] countsOrigin = new int[stations.size()];
+  int[] countsDest = new int[stations.size()];
 
   if (current_line < stations.size()) {
     println("Origin: ");
@@ -160,14 +154,14 @@ void draw() {
   stroke(100, 100, 100);
   fill(255, 51, 51, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
   //the 4th entry is transarency, where 0 means 0% opaque (completely transparent) and 255 is completely opaque  
-
-  for (Map.Entry me : stations.entrySet()) {
-    println("getKey type: " + me.getKey());
-    //origin_size = countsOrigin.get(1);
-    //for each key find the size of the station as a function of the number of originating trips
-
+  int ii_o = 0;
+  int ii_d = 0;
+  for (Map.Entry me : stations.entrySet()) { 
+    //println("getKey type: " + me.getKey());
+    origin_size = countsOrigin[ii_o];
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size, origin_size);
+    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size*2, origin_size*2);
+    ii_o++;
   }
 
   // draw stations as a function of destinations
@@ -175,15 +169,15 @@ void draw() {
   fill(0, 193, 56, 127); // #00C138 =  (0, 193, 56) green
   for (Map.Entry me : stations.entrySet()) {
     //println("getKey funtion: " + me.getKey());
-
-    //for each key find the size of the station as a function of the number of originating trips
-
+    dest_size = countsDest[ii_d];
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size, dest_size);
+    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size*2, dest_size*2);
+    ii_d++;
   }
   
   reb_period++;
   counter++;
+
   //println("reb_period: " + reb_period);
   popMatrix();
   fill(#0000FF);
