@@ -8,7 +8,7 @@ import java.util.Calendar;
 
 // configuration
 int frame_rate = 2; // how many frames is visualized per second
-boolean save_frame = true;
+boolean save_frame = false;
 float day_start_time = 3*60*60;
 int ncars = 0;
 int reb_period = 0;
@@ -49,7 +49,7 @@ void settings() {
 void setup() {
   frameRate(frame_rate);
   stroke(255);
-  bg = loadImage("mapbw_new.png");
+  bg = loadImage("mapbw_needReb.png");
   background(bg);
   smooth();
 
@@ -128,8 +128,7 @@ void readCountsFile(BufferedReader reader, int currentLine, int[] counts) {
 void draw() {
   background(bg);
 
-  int origin_size = 250;
-  int dest_size = 150; 
+  int excess_count = 250;
   readStationFile();
 
   int current_line = reb_period;
@@ -137,6 +136,7 @@ void draw() {
   //ArrayList<Counter> countsDest = new ArrayList<Counter>();
   int[] countsOrigin = new int[stations.size()];
   int[] countsDest = new int[stations.size()];
+  int[] excess_demand = new int[stations.size()];
 
   if (current_line < stations.size()) {
     println("Origin: ");
@@ -147,37 +147,60 @@ void draw() {
     //println("Counts Destination size: " + countsDest.size());
   }
 
+  // calculate how many more vehicles do we need at each station
+  // at each period of time
+  for (int i = 0; i < stations.size(); i++) {
+    excess_demand[i] = countsDest[i] - countsOrigin[i];
+  }
   // apply transformation
   pushMatrix();
   scale(scaling);
   //rotate(radians(45));
   translate(-min_x, -min_y);
 
-  // draw stations as a function of origins
-  stroke(100, 100, 100);
-  fill(255, 51, 51, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
+  // draw stations as a function "not enough vehicles"
+  // stroke(100, 100, 100);
+  // fill(255, 51, 51, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
   //the 4th entry is transarency, where 0 means 0% opaque (completely transparent) and 255 is completely opaque  
   int ii_o = 0;
-  int ii_d = 0;
   for (Map.Entry me : stations.entrySet()) { 
     //println("getKey type: " + me.getKey());
-    origin_size = countsOrigin[ii_o];
+    excess_count = excess_demand[ii_o];
     Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, origin_size*3, origin_size*3);
-    ii_o++;
+
+    // if (excess_count > 0) -> we do not have enough vehicles to serve customers
+    if (excess_count > 0) {
+
+      stroke(100, 100, 100);
+      fill(255, 51, 51, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
+      ellipse(st.stationX, max_y - st.stationY + min_y, excess_count*10, excess_count*10);
+      ii_o++;
+    } else {
+
+      stroke(100, 100, 100);
+      fill(0, 193, 56, 127);
+      ellipse(st.stationX, max_y - st.stationY + min_y, abs(excess_count)*10, abs(excess_count)*10);
+      ii_o++;
+    }
   }
 
-  // draw stations as a function of destinations
-  stroke(100, 100, 100);
-  fill(0, 193, 56, 127); // #00C138 =  (0, 193, 56) green
-  for (Map.Entry me : stations.entrySet()) {
-    //println("getKey funtion: " + me.getKey());
-    dest_size = countsDest[ii_d];
-    Station st = (Station) me.getValue();
-    ellipse(st.stationX, max_y - st.stationY + min_y, dest_size*3, dest_size*3);
-    ii_d++;
-  }
-  
+  //// draw stations as a function "too many vehicles"
+  //stroke(100, 100, 100);
+  //fill(0, 193, 56, 127); // #6A5ACD = (106, 90, 205) purple, red = (255, 51, 51)
+  ////the 4th entry is transarency, where 0 means 0% opaque (completely transparent) and 255 is completely opaque  
+  //int ii_d = 0;
+  //for (Map.Entry me : stations.entrySet()) { 
+  //  //println("getKey type: " + me.getKey());
+  //  excess_count = excess_demand[ii_d];
+  //  Station st = (Station) me.getValue();
+
+  //  // if (excess_count > 0) -> we do not have enough vehicles to serve customers
+  //  if (excess_count <= 0) {
+  //    ellipse(st.stationX, max_y - st.stationY + min_y, abs(excess_count)*10, abs(excess_count)*10);
+  //    ii_d++;
+  //  }
+  //}
+
   reb_period++;
   counter++;
 
@@ -193,7 +216,7 @@ void draw() {
   calendar.add(Calendar.SECOND, (int) sim_time);
   DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
   text(formatter.format(calendar.getTime()), 10, 30);
-  
+
   if (save_frame) {
     saveFrame(frame_filename);
   }

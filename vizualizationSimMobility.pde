@@ -12,10 +12,10 @@ import java.util.Calendar;
 // configuration
 float time_window = 30; // 1 second
 int frame_rate = 50;
-boolean save_frame = false;
+boolean save_frame = true;
 float day_start_time = 3*60*60;
 int ncars = 0;
-String frame_filename;
+String frame_filename = "simmobility.tif";
 float prev_time = -1;
 PImage bg;
 
