@@ -12,10 +12,10 @@ import java.util.Calendar;
 // configuration
 float time_window = 30; // 1 second
 int frame_rate = 50;
-boolean save_frame = true;
-float day_start_time = 3*60*60;
+boolean save_frame = false;
+float day_start_time = 0*60*60; // I start the day at 3am
 int ncars = 0;
-String frame_filename = "simmobility.tif";
+String frame_filename = "simmobility-########.tif";
 float prev_time = -1;
 PImage bg;
 
@@ -82,14 +82,14 @@ void settings(){
 void setup() {
   frameRate(frame_rate);
   //load data from file
-  String filename = "/Users/katarzyna/Downloads/ecbd_log_2150Vehs.txt";  
+  String filename = "/Users/katarzyna/Desktop/ecbd_log.txt";  
 
   reader = createReader(filename);
 
   stroke(255);
-  bg = loadImage("/Users/katarzyna/Documents/Processing/vizualizationSimMobility/mapbw.png");
-  background(bg);
-  //background(0, 0, 0);
+  bg = loadImage("/Users/katarzyna/Documents/Processing/vizualizationSimMobility/mapbw900x675.png");
+  //background(bg);
+  background(0, 0, 0);
   smooth();
   // compute transformation vector
   scale_x = w_width/range_x;
@@ -106,11 +106,12 @@ void readLogFile(float end_time, ArrayList events) {
   String line;
   ncars = 0;
   while (true) {
-    try {
+    try { //The try keyword is used with catch to handle exceptions
       line = reader.readLine();
     } 
-    catch (IOException e) {
-      e.printStackTrace();
+    // if this code throws an an error while reading the file, then the code in "catch" is run
+    catch (IOException ex) {
+      ex.printStackTrace();
       line = null;
     }
     if (line == null) return;
@@ -119,14 +120,18 @@ void readLogFile(float end_time, ArrayList events) {
     Event e = new Event();
 
     if (parseInt(cols[3]) < 4 && parseInt(cols[3]) > 0 ) { //based on event id in AMODBase
-      // moves, dropoffs or pickups
+       // moves, dropoffs or pickups
       //println(line);
+      //println(cols[3]);
       e.id = parseInt(cols[2]);
-      e.type = parseInt(cols[3]);
-      e.t = parseFloat(cols[0]);
-      e.x = parseFloat(cols[7])*mult_x;
-      e.y = parseFloat(cols[8])*mult_y;
-      e.status = parseInt(cols[9]);
+      e.type = parseInt(cols[3]); // type: 1-VehicleMove, 2-VehicleArrival, 3-CustomerPickup, 
+      // 4-CustomerDropoff, 5-LocationVehSizeChange, 6-LocationCustSizeChange
+      e.t = parseFloat(cols[0]); // time in seconds
+      e.x = parseFloat(cols[7])*mult_x; // utm x position in m
+      e.y = parseFloat(cols[8])*mult_y; //utm y position in m
+      e.status = parseInt(cols[9]); // status 0-FREE, 1-BUSY, 2-HIRED, 3-MOVING_TO_PICKUP,
+      // 4-MOVING_TO_DROPOFF, 5-PICKING_UP, 6-DROPPING_OFF, 7-PARKED, 8-MOVING_TO_REBALANCE [...]
+      
       e.s = 1;
       if (e.type == 2) {
         ncars++;
@@ -165,14 +170,14 @@ void readLogFile(float end_time, ArrayList events) {
 
 // draw function
 void draw() {
-  background(bg);
-  //    println(frameCount);
-  //    fill(0, 0, 0, 50);
-  //    noStroke();
-  //    rect(0, 0, width, height);
+      //background(bg);
+      println(frameCount);
+      fill(0, 0, 0, 50);
+      noStroke();
+      rect(0, 0, width, height);
 
   float sc_factor = 10; //30
-  float loc_s_factor = 0.000001; //1.0
+  float loc_s_factor = 0.0001; //1.0 0.000001
 
   //line(150, 25, mouseX, mouseY);
   float start_time = current_time;
@@ -202,21 +207,21 @@ void draw() {
 
     // draw the event
     // enum EventType {EVENT_MOVE, EVENT_ARRIVAL, EVENT_PICKUP, EVENT_DROPOFF};
-    if (e.type == 1) {
-      if (e.status == 8) {
-        fill(#6A5ACD); //yellow FFAF00, purple #6A5ACD
-      } else {
-        fill(#EE3A8C); //blue #00B0FF
+    if (e.type == 1) { // if the vehicles is moving
+      if (e.status == 8) { // moving to rebalance
+        fill(#6A5ACD); // purple #6A5ACD
+      } else { // moving to pick up or to dropoff 
+        fill(#EE3A8C); // pink #EE3A8C
       }
       ellipse(e.x, max_y-e.y+min_y, 5*sc_factor, 5*sc_factor);  // move event
       //println("", e.x, " " , e.y);
-    } else if (e.type == 2) {
-      fill(#6A5ACD); //yellow
+    } else if (e.type == 2) { // vehicle arrival
+      fill(#00C138); //green #00C138
       ellipse(e.x, max_y-e.y+min_y, 8*sc_factor, 8*sc_factor);
-    } else if (e.type == 3) {
-      fill(#00C138); //green
+    } else if (e.type == 3) { // customer pickup
+      fill(#00C138); //green #00C138
       ellipse(e.x, max_y-e.y+min_y, 10*sc_factor, 10*sc_factor);
-    } else if (e.type == 4) {
+    } else if (e.type == 4) { // customer dropoff
       fill(#FF00E6); //pink
       ellipse(e.x, max_y-e.y+min_y, 12*sc_factor, 12*sc_factor);
     }
@@ -226,7 +231,7 @@ void draw() {
   current_time = end_time;
 
   popMatrix();
-  fill(#0000FF);
+  fill(#0000FF); // blue clock in the corner
   textSize(32);
   float sim_time = current_time + day_start_time;
   //println(sim_time);
